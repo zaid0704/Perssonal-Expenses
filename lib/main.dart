@@ -19,23 +19,30 @@ class homePageState extends State<homePage> {
   
   final commodity=TextEditingController();
   final amount = TextEditingController();
- // final firebase = Firestore.instance.collection("Expenses").document();
+  
+  final firebase = Firestore.instance.collection("ex");
+  final updateTotal = Firestore.instance.collection("total").document();
   Widget updateListView(TextEditingController text,TextEditingController amount)
    {
      setState((){
       
       
-       list.add(transaction(text.text,double.parse(amount.text)));
-       //updateDatabase(text.text,double.parse(amount.text));
+      // list.add(transaction(text.text,double.parse(amount.text)));
+       updateDatabase(text.text,double.parse(amount.text));
        total=total+double.parse(amount.text);
      });
    }
-  //  Future<void>  updateDatabase(item,price)async{
-  //     await firebase.setData({
-  //        'Item ':'$item',
-  //        'amount':'$price'
-  //      });
-  //  }
+   Future<void>  updateDatabase(item,price)async{
+      await firebase.add({
+         'col':'$item',
+         'amount':'$price'
+       });
+       updateTotal.updateData({
+         'total':'${total+price}'
+       });
+       
+      
+   }
    Widget addTransaction()
     {
       return Column(
@@ -122,10 +129,14 @@ class homePageState extends State<homePage> {
             // addTransaction(),
         Container(
           width: double.infinity,
-          height:350.0,
-          child: ListView.builder(
-      itemCount:list.length ,
-      itemBuilder: (context,index){
+          height:540.0,
+          child:StreamBuilder(
+            stream: Firestore.instance.collection("ex").snapshots(),
+            builder: (context,snapshot){
+              return  
+              ListView.builder(
+          itemCount:snapshot.data.documents.length ,
+          itemBuilder: (context,index){
         return  Card(
           elevation: 6.0,
           child:ListTile(
@@ -140,10 +151,11 @@ class homePageState extends State<homePage> {
             
               // padding: EdgeInsets.all(15.0),
               
-              child: Text('\$${list[index].amount}',style: TextStyle(color: Colors.purple),),
+              child: Text('\$${snapshot.data.documents[index]['amount']}',style: TextStyle(color: Colors.purple),),
+            
             ),
             
-            title: Text('${list[index].text}'),
+            title: Text('${snapshot.data.documents[index]['col']}'),
             subtitle: Text('${DateTime.now()}'),
           ),
 
@@ -151,7 +163,10 @@ class homePageState extends State<homePage> {
         
         
       },
-    )
+    );
+            },
+          ),
+          
         ),
           
       ],
